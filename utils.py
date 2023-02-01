@@ -3,6 +3,7 @@ ref: http://www.cdyszyxy.cn/jingdian/358335.html
 """
 
 import datetime
+import wuxing_relation as wx
 
 # 数组LunarMonthDay存入阴历1901年到2050年每年中的月天数信息。阴历每月只能是29或30天，一年用12（或13）个二进制位表示，对应位为1表30天，否则为29天。
 LunarMonthDay = [
@@ -260,55 +261,70 @@ def cal_gz_hour(hour, gz_day):  # 返回干支纪时（时辰）
         gz_hour_num = 10
     return TianGan[gz_hour_num-1] + DiZhi[Z]
 
-# TODO
-Gz_2_Wuxing = {
-    '甲': '木',
-    '乙': '木',
-    '丙': '火',
-    '丁': '火',
-    '戊': '土',
-    '己': '土',
-    '庚': '金',
-    '辛': '金',
-    '壬': '水',
-    '癸': '水',
-    '子': '水',
-    '丑': '土',
-    '寅': '木',
-    '卯': '木',
-    '辰': '土',
-    '巳': '火',
-    '午': '火',
-    '未': '土',
-    '申': '金',
-    '酉': '金',
-    '戌': '土',
-    '亥': '水',
+Gan_2_Wuxing = {
+    '甲': ['木', '阳'],
+    '乙': ['木', '阴'],
+    '丙': ['火', '阳'],
+    '丁': ['火', '阴'],
+    '戊': ['土', '阳'],
+    '己': ['土', '阴'],
+    '庚': ['金', '阳'],
+    '辛': ['金', '阴'],
+    '壬': ['水', '阳'],
+    '癸': ['水', '阴']}
+Zhi_2_Wuxing = {
+    '子': ['水', '阳'],
+    '丑': ['土', '阴'],
+    '寅': ['木', '阳'],
+    '卯': ['木', '阴'],
+    '辰': ['土', '阳'],
+    '巳': ['火', '阴'],
+    '午': ['火', '阳'],
+    '未': ['土', '阴'],
+    '申': ['金', '阳'],
+    '酉': ['金', '阴'],
+    '戌': ['土', '阳'],
+    '亥': ['水', '阴'],
 }
-# WuXing = ["金", "木", "水", "火", "土"]
-def set_wuxing(self):
-    gz_list = self.bazi
-    wu_xing_str = ""
-    for g in gz_list:
-        wu_xing_str = wu_xing_str + self._gz_to_wu_xing(g)
-    count = {}
-    for i in wu_xing_str:
-        if i not in count:
-            count[i] = 1
-        else:
-            count[i] += 1
-    self.wuxing = count
-    return 0
 
-def _gz_to_wu_xing(self, gz_str):
-    if len(gz_str) > 0:
-        wu_xing = ""
-        for gz in list(gz_str):
-            wu_xing = wu_xing + Gz_2_Wuxing[gz]
-        return wu_xing
+def get_shishen(wuxing, rizhu):
+    attr, yy = wuxing
+    _, rz_attr, rz_yy = rizhu
+
+    link = wx.WuXingLink()
+    if attr == link.who_improve_me(rz_attr):
+        return '正印' if yy != rz_yy else '偏印'
+    elif attr == link.who_impair_me(rz_attr):
+        return '正官' if yy != rz_yy else '七杀'
+    elif attr == link.me_improve_who(rz_attr):
+        return '伤官' if yy != rz_yy else '食神'
+    elif attr == link.me_impair_who(rz_attr):
+        return '正财' if yy != rz_yy else '偏财'
     else:
-        return ""
+        return '劫财' if yy != rz_yy else '比肩'
 
+def cal_wuxing(bazi):
+    wuxing = []
+    for gz in bazi:
+        gan, zhi = gz[0], gz[1]
+        wuxing.extend(Gan_2_Wuxing[gan][0])
+        wuxing.extend(Zhi_2_Wuxing[zhi][0])
+    return wuxing
+
+def cal_shishen(rizhu, bazi):
+    shishen_table = []
+    for gz in bazi:
+        gan, zhi = gz[0], gz[1]
+
+        gan_wuxing = Gan_2_Wuxing[gan]
+        shishen = get_shishen(gan_wuxing, rizhu)
+        shishen_table.append([gan, gan_wuxing[0], gan_wuxing[1], shishen])
+
+        zhi_wuxing = Zhi_2_Wuxing[zhi]
+        shishen = get_shishen(zhi_wuxing, rizhu)
+        shishen_table.append([zhi, zhi_wuxing[0], zhi_wuxing[1], shishen])
+    del(shishen_table[4])     # remove rigan
+    return shishen_table
 
 
 
