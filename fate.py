@@ -2,14 +2,21 @@ import utils
 
 
 class Lunar(object):
-    def __init__(self, year, month, day, hour, gender):
-        self.year = year
-        self.month = month
-        self.day = day
+    def __init__(self, year, month, day, hour, if_dt=True, gender='male', if_leap_month=False):
         self.hour = hour
         self.gender = gender     # female, male
 
-        self.nl_year = self.nl_month = self.nl_day = 1
+        if if_dt:
+            self.year = year
+            self.month = month
+            self.day = day
+            self.nl_year, self.nl_month, self.nl_day = utils.transfer_dt_to_lunar(self.year, self.month, self.day)
+        else:
+            self.nl_year = year
+            self.nl_month = month
+            self.nl_day = day
+            self.year, self.month, self.day = utils.transfer_lunar_to_dt(self.year, self.month, self.day, if_leap_month)
+
         self.gz_year = self.gz_month = self.gz_day = self.gz_hour = ""
         self.bazi = []
         self.rigan = []
@@ -23,21 +30,20 @@ class Lunar(object):
         self.age_qiyun = 1
 
     def init(self):
-        self.set_nl_date()
+        print('公历生日：' + str(self.year) + '年' + str(self.month) + '月' + str(self.day) + '日' + "\n" +
+              '农历生日：' + str(self.nl_year) + '年' + str(self.nl_month) + '月' + str(self.nl_day) + '日')
+
         self.set_shengxiao()
         self.set_bazi()
         self.set_wuxing()
-        self.set_rizhu()
         self.set_shishen()
         self.set_yongshen()
-
-    def set_nl_date(self):
-        self.nl_year, self.nl_month, self.nl_day = utils.cal_nl_date(self.year, self.month, self.day)
 
     def set_shengxiao(self):
         year = self.nl_year - 3 - 1     # 农历年份减3 （说明：补减1）
         year = year % 12                # 模12，得到地支数
         self.shengxiao = utils.SHENGXIAO[year]
+        print('生肖：' + self.shengxiao)
 
     def set_bazi(self):
         self.gz_year = utils.cal_gz_year(self.nl_year)
@@ -46,16 +52,29 @@ class Lunar(object):
         self.gz_hour = utils.cal_gz_hour(self.hour, self.gz_day)
         self.bazi = [self.gz_year, self.gz_month, self.gz_day, self.gz_hour]
 
-    def set_wuxing(self):
-        self.wuxing = utils.cal_wuxing(self.bazi)
-
-    def set_rizhu(self):  # 日主，采用日干来推演
         rizhu = self.bazi[2][0]
         wuxing = utils.GAN_2_WX_YY[rizhu]
         self.rigan = [rizhu, wuxing[0], wuxing[1]]
+        print('八字：' + ' '.join(self.bazi) + ', 日干为：' + self.rigan[0] + self.rigan[1])
 
-    def set_shishen(self):
-        self.shishen = utils.cal_shishen(self.rigan, self.bazi)
+    def set_wuxing(self):     # TODO: count, what lack
+        for gz in self.bazi:
+            gan, zhi = gz[0], gz[1]
+            self.wuxing.extend(utils.GAN_2_WX_YY[gan][0])
+            self.wuxing.extend(utils.ZHI_2_WX_YY[zhi][0])
+        print('五行：' + ','.join(self.wuxing))
+
+    def set_shishen(self):     # TODO：count and analyze
+        for gz in self.bazi:
+            gan, zhi = gz[0], gz[1]
+            gan_wuxing = utils.GAN_2_WX_YY[gan]
+            shishen = utils.get_shishen(gan_wuxing, self.rigan)
+            self.shishen.append([gan, gan_wuxing[0], gan_wuxing[1], shishen])
+            zhi_wuxing = utils.ZHI_2_WX_YY[zhi]
+            shishen = utils.get_shishen(zhi_wuxing, self.rigan)
+            self.shishen.append([zhi, zhi_wuxing[0], zhi_wuxing[1], shishen])
+        del (self.shishen[4])  # remove rigan
+        print('十神：' + ','.join(self.shishen[i][3] for i in range(7)))
 
     def set_yongshen(self):
         bazi = ''.join(self.bazi)
@@ -67,26 +86,17 @@ class Lunar(object):
         self.wuxing_it['水'] = v_wx_it['水']
         same_cate, same_v = v_wx_it['同类']
         diff_cate, diff_v = v_wx_it['异类']
-        if same_v <= diff_v:
-            print('日干偏弱，需要补强')
+
+        if same_v <= diff_v:    # TODO：modify yongshen
             self.yongshen = same_cate
+            print('日干偏弱，需要补强。用神为：' + ','.join(self.yongshen))
         else:
-            print('日干偏强，需要抑制')
             self.yongshen = diff_cate
-
-
-    def print_info(self):
-        print('公历生日：' + str(self.year) + '年' + str(self.month) + '月' + str(self.day) + '日' + "\n" +
-              '农历生日：' + str(self.nl_year) + '年' + str(self.nl_month) + '月' + str(self.nl_day) + '日' + '\n' +
-              '生肖：' + self.shengxiao + '\n' +
-              '八字：' + ','.join(self.bazi) + '\n' +
-              '五行：' + ','.join(self.wuxing) + '\n' +
-              '十神：' + ','.join(self.shishen[i][3] for i in range(7))
-              )
+            print('日干偏强，需要抑制。用神为：' + ','.join(self.yongshen))
 
 
 if __name__ == "__main__":
-    # example = Lunar(1994, 6, 12, 4, 'female')
-    example = Lunar(1968, 9, 29, 8, 'female')
+    example = Lunar(1994, 6, 12, 4, if_dt=True, gender='female', if_leap_month=False)
+    # if_leap_month表示农历闰月，仅在if_dt=False时要求usr输入
+
     example.init()
-    example.print_info()

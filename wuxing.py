@@ -42,10 +42,7 @@ class WuXingLink(object):
     def who_improve_me(self, attr):
         self.improve()
         for node in self.attrs:
-            a = node.name
-            b = attr
             if node.name == attr:
-                x = node.left.name
                 return node.left.name
         print('错误传参！仅限以下之一：金、木、水、火、土')
         return ''
@@ -220,6 +217,12 @@ HAI_SHENGXIAO = (('鼠', '羊'), ('牛', '马'), ('虎', '蛇'), ('土', '龙'),
 LUNAR_MONTH_ZHI_2_NUM = {
     '寅': 1, '卯': 2, '辰': 3, '巳': 4, '午': 5, '未': 6,
     '申': 7, '酉': 8, '戌': 9, '亥': 10, '子': 11, '丑': 12
+}
+
+HOUR_2_ZHI = {
+    # [1, 2] means [1:00, 3:00)
+    '子': [23, 0], '丑': [1, 2], '寅': [3, 4], '卯': [5, 6], '辰': [7, 8], '巳': [9, 10],
+    '午': [11, 12], '未': [13, 14], '申': [15, 16], '酉': [17, 18], '戌': [19, 20], '亥': [21, 22]
 }
 
 GAN_MONTH_INTENSITY_TABLE = {

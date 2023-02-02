@@ -4,84 +4,20 @@ ref: http://www.cdyszyxy.cn/jingdian/358335.html
 
 import datetime
 import pandas as pd
+import zhdate
 from wuxing import *
 
 
-def cal_leap_month(lunar_year):
-    flag = LUNARMONTH[(lunar_year - START_YEAR) // 2]
-    if (lunar_year - START_YEAR) % 2:
-        return flag & 0x0f
-    else:
-        return flag >> 4
+def transfer_lunar_to_dt(year, month, day, if_leap_month=False):
+    lunar_date = zhdate.ZhDate(year, month, day, leap_month=if_leap_month)  # leap_month为闰月出生
+    dt_date = lunar_date.to_datetime()
+    return dt_date.year, dt_date.month, dt_date.day
 
 
-def cal_lunar_month_days(lunar_year, lunar_month):
-    if lunar_year < START_YEAR:
-        return 30
-
-    high, low = 0, 29
-    iBit = 16 - lunar_month
-    if lunar_month > cal_leap_month(lunar_year) and cal_leap_month(lunar_year):
-        iBit -= 1
-    if LUNARMONTHDAY[lunar_year - START_YEAR] & (1 << iBit):
-        low += 1
-    if lunar_month == cal_leap_month(lunar_year):
-        if LUNARMONTHDAY[lunar_year - START_YEAR] & (1 << (iBit - 1)):
-            high = 30
-        else:
-            high = 29
-
-    return high, low
-
-
-def cal_lunar_year_days(year):
-    days = 0
-    for i in range(1, 13):
-        (high, low) = cal_lunar_month_days(year, i)
-        days += high
-        days += low
-    return days
-
-
-def cal_nl_date(year, month, day):  # 返回农历日期整数元组（年、月、日）（查表法）
-    delta_days = (datetime.datetime(year, month, day) - datetime.datetime(START_YEAR, 1, 1)).days   # 返回基于1901/01/01日差数
-
-    # 阳历1901年1月1日到2月19日(正月初一)共有49天
-    if delta_days < 49:
-        nl_year = START_YEAR - 1
-        if delta_days < 19:
-            nl_month = 11
-            nl_day = 11 + delta_days
-        else:
-            nl_month = 12
-            nl_day = delta_days - 18
-        return nl_year, nl_month, nl_day
-
-    # 下面从阴历1901年正月初一算起
-    delta_days -= 49
-    nl_year, nl_month, nl_day = START_YEAR, 1, 1
-    # 计算年
-    tmp = cal_lunar_year_days(nl_year)
-    while delta_days >= tmp:
-        delta_days -= tmp
-        nl_year += 1
-        tmp = cal_lunar_year_days(nl_year)
-
-    # 计算月
-    (foo, tmp) = cal_lunar_month_days(nl_year, nl_month)
-    while delta_days >= tmp:
-        delta_days -= tmp
-        if nl_month == cal_leap_month(nl_year):
-            (tmp, foo) = cal_lunar_month_days(nl_year, nl_month)
-            if delta_days < tmp:
-                return 0, 0, 0
-            delta_days -= tmp
-        nl_month += 1
-        (foo, tmp) = cal_lunar_month_days(nl_year, nl_month)
-
-    # 计算日
-    nl_day += delta_days
-    return nl_year, nl_month, nl_day
+def transfer_dt_to_lunar(year, month, day):
+    dt_date = datetime.datetime(year, month, day)
+    lunar_date = zhdate.ZhDate.from_datetime(dt_date)
+    return lunar_date.lunar_year, lunar_date.lunar_month, lunar_date.lunar_day
 
 
 def cal_gz_year(nl_year):  # 返回干支纪年
@@ -232,31 +168,6 @@ def get_shishen(wuxing, rizhu):
     return res
 
 
-def cal_wuxing(bazi):
-    wuxing = []
-    for gz in bazi:
-        gan, zhi = gz[0], gz[1]
-        wuxing.extend(GAN_2_WX_YY[gan][0])
-        wuxing.extend(ZHI_2_WX_YY[zhi][0])
-    return wuxing
-
-
-def cal_shishen(rizhu, bazi):
-    shishen_table = []
-    for gz in bazi:
-        gan, zhi = gz[0], gz[1]
-
-        gan_wuxing = GAN_2_WX_YY[gan]
-        shishen = get_shishen(gan_wuxing, rizhu)
-        shishen_table.append([gan, gan_wuxing[0], gan_wuxing[1], shishen])
-
-        zhi_wuxing = ZHI_2_WX_YY[zhi]
-        shishen = get_shishen(zhi_wuxing, rizhu)
-        shishen_table.append([zhi, zhi_wuxing[0], zhi_wuxing[1], shishen])
-    del(shishen_table[4])     # remove rigan
-    return shishen_table
-
-
 def cal_wx_intensity(bazi):
     # ref: https://www.buyiju.com/bzzs/qufa.html
 
@@ -299,7 +210,8 @@ def cal_wx_intensity(bazi):
     day_gan_attr = GAN_2_WX_YY[day_gan][0]
     link = WuXingLink()
     same_category = [day_gan_attr, link.who_improve_me(day_gan_attr)]
-    diff_category = [link.who_impair_me(day_gan_attr), link.me_impair_who(day_gan_attr), link.me_improve_who(day_gan_attr)]
+    diff_category = [link.who_impair_me(day_gan_attr), link.me_impair_who(day_gan_attr),
+                     link.me_improve_who(day_gan_attr)]
     del link
     v_same_category = v_diff_category = 0
     for k, v in v_wx_it.items():
@@ -313,4 +225,9 @@ def cal_wx_intensity(bazi):
 
 
 if __name__ == '__main__':
+    print(transfer_lunar_to_dt(1994, 5, 4))
+    print(transfer_dt_to_lunar(1994, 6, 12))
     print(0)
+
+
+
