@@ -3,73 +3,17 @@ ref: http://www.cdyszyxy.cn/jingdian/358335.html
 """
 
 import datetime
-import wuxing_relation as wx
+import pandas as pd
+from wuxing import *
 
-# 数组LunarMonthDay存入阴历1901年到2050年每年中的月天数信息。阴历每月只能是29或30天，一年用12（或13）个二进制位表示，对应位为1表30天，否则为29天。
-LunarMonthDay = [
-    0x4ae0, 0xa570, 0x5268, 0xd260, 0xd950, 0x6aa8, 0x56a0, 0x9ad0, 0x4ae8, 0x4ae0,  # 1910
-    0xa4d8, 0xa4d0, 0xd250, 0xd548, 0xb550, 0x56a0, 0x96d0, 0x95b0, 0x49b8, 0x49b0,  # 1920
-    0xa4b0, 0xb258, 0x6a50, 0x6d40, 0xada8, 0x2b60, 0x9570, 0x4978, 0x4970, 0x64b0,  # 1930
-    0xd4a0, 0xea50, 0x6d48, 0x5ad0, 0x2b60, 0x9370, 0x92e0, 0xc968, 0xc950, 0xd4a0,  # 1940
-    0xda50, 0xb550, 0x56a0, 0xaad8, 0x25d0, 0x92d0, 0xc958, 0xa950, 0xb4a8, 0x6ca0,  # 1950
-    0xb550, 0x55a8, 0x4da0, 0xa5b0, 0x52b8, 0x52b0, 0xa950, 0xe950, 0x6aa0, 0xad50,  # 1960
-    0xab50, 0x4b60, 0xa570, 0xa570, 0x5260, 0xe930, 0xd950, 0x5aa8, 0x56a0, 0x96d0,  # 1970
-    0x4ae8, 0x4ad0, 0xa4d0, 0xd268, 0xd250, 0xd528, 0xb540, 0xb6a0, 0x96d0, 0x95b0,  # 1980
-    0x49b0, 0xa4b8, 0xa4b0, 0xb258, 0x6a50, 0x6d40, 0xada0, 0xab60, 0x9370, 0x4978,  # 1990
-    0x4970, 0x64b0, 0x6a50, 0xea50, 0x6b28, 0x5ac0, 0xab60, 0x9368, 0x92e0, 0xc960,  # 2000
-    0xd4a8, 0xd4a0, 0xda50, 0x5aa8, 0x56a0, 0xaad8, 0x25d0, 0x92d0, 0xc958, 0xa950,  # 2010
-    0xb4a0, 0xb550, 0xb550, 0x55a8, 0x4ba0, 0xa5b0, 0x52b8, 0x52b0, 0xa930, 0x74a8,  # 2020
-    0x6aa0, 0xad50, 0x4da8, 0x4b60, 0x9570, 0xa4e0, 0xd260, 0xe930, 0xd530, 0x5aa0,  # 2030
-    0x6b50, 0x96d0, 0x4ae8, 0x4ad0, 0xa4d0, 0xd258, 0xd250, 0xd520, 0xdaa0, 0xb5a0,  # 2040
-    0x56d0, 0x4ad8, 0x49b0, 0xa4b8, 0xa4b0, 0xaa50, 0xb528, 0x6d20, 0xada0, 0x55b0,  # 2050
-]
-
-# 数组LunarMonth存放阴历1901年到2050年闰月的月份，如没有则为0，每字节存两年。
-LunarMonth = [
-    0x00, 0x50, 0x04, 0x00, 0x20,  # 1910
-    0x60, 0x05, 0x00, 0x20, 0x70,  # 1920
-    0x05, 0x00, 0x40, 0x02, 0x06,  # 1930
-    0x00, 0x50, 0x03, 0x07, 0x00,  # 1940
-    0x60, 0x04, 0x00, 0x20, 0x70,  # 1950
-    0x05, 0x00, 0x30, 0x80, 0x06,  # 1960
-    0x00, 0x40, 0x03, 0x07, 0x00,  # 1970
-    0x50, 0x04, 0x08, 0x00, 0x60,  # 1980
-    0x04, 0x0a, 0x00, 0x60, 0x05,  # 1990
-    0x00, 0x30, 0x80, 0x05, 0x00,  # 2000
-    0x40, 0x02, 0x07, 0x00, 0x50,  # 2010
-    0x04, 0x09, 0x00, 0x60, 0x04,  # 2020
-    0x00, 0x20, 0x60, 0x05, 0x00,  # 2030
-    0x30, 0xb0, 0x06, 0x00, 0x50,  # 2040
-    0x02, 0x07, 0x00, 0x50, 0x03  # 2050
-]
-
-START_YEAR = 1901
-TianGan = '甲乙丙丁戊己庚辛壬癸'
-DiZhi = '子丑寅卯辰巳午未申酉戌亥'
-ShengXiao = '鼠牛虎兔龙蛇马羊猴鸡狗猪'
-JieQi = '小寒大寒立春雨水惊蛰春分清明谷雨立夏小满芒种夏至小暑大暑立秋处暑白露秋分寒露霜降立冬小雪大雪冬至'
-JieQi_Odd = "立春惊蛰清明立夏芒种小暑立秋白露寒露立冬大雪小寒"  # 节气节点，如立春-惊蛰是正月，两个节气一个月
-JieQi_Month = {
-    "立春": [0, "寅"],
-    "惊蛰": [1, "卯"],
-    "清明": [2, "辰"],
-    "立夏": [3, "巳"],
-    "芒种": [4, "午"],
-    "小暑": [5, "未"],
-    "立秋": [6, "申"],
-    "白露": [7, "酉"],
-    "寒露": [8, "戌"],
-    "立冬": [9, "亥"],
-    "大雪": [10, "子"],
-    "小寒": [11, "丑"],
-}
 
 def cal_leap_month(lunar_year):
-    flag = LunarMonth[(lunar_year - START_YEAR) // 2]
+    flag = LUNARMONTH[(lunar_year - START_YEAR) // 2]
     if (lunar_year - START_YEAR) % 2:
         return flag & 0x0f
     else:
         return flag >> 4
+
 
 def cal_lunar_month_days(lunar_year, lunar_month):
     if lunar_year < START_YEAR:
@@ -79,15 +23,16 @@ def cal_lunar_month_days(lunar_year, lunar_month):
     iBit = 16 - lunar_month
     if lunar_month > cal_leap_month(lunar_year) and cal_leap_month(lunar_year):
         iBit -= 1
-    if LunarMonthDay[lunar_year - START_YEAR] & (1 << iBit):
+    if LUNARMONTHDAY[lunar_year - START_YEAR] & (1 << iBit):
         low += 1
     if lunar_month == cal_leap_month(lunar_year):
-        if LunarMonthDay[lunar_year - START_YEAR] & (1 << (iBit - 1)):
+        if LUNARMONTHDAY[lunar_year - START_YEAR] & (1 << (iBit - 1)):
             high = 30
         else:
             high = 29
 
     return high, low
+
 
 def cal_lunar_year_days(year):
     days = 0
@@ -96,6 +41,7 @@ def cal_lunar_year_days(year):
         days += high
         days += low
     return days
+
 
 def cal_nl_date(year, month, day):  # 返回农历日期整数元组（年、月、日）（查表法）
     delta_days = (datetime.datetime(year, month, day) - datetime.datetime(START_YEAR, 1, 1)).days   # 返回基于1901/01/01日差数
@@ -137,11 +83,13 @@ def cal_nl_date(year, month, day):  # 返回农历日期整数元组（年、月
     nl_day += delta_days
     return nl_year, nl_month, nl_day
 
+
 def cal_gz_year(nl_year):  # 返回干支纪年
     year = nl_year - 3 - 1  # 农历年份减3 （说明：补减1）
     G = year % 10  # 模10，得到天干数
     Z = year % 12  # 模12，得到地支数
-    return TianGan[G] + DiZhi[Z]
+    return TIANGAN[G] + DIZHI[Z]
+
 
 def cal_jieqi(dt):  # 返回农历节气
     def cal_rulian_day(dt):
@@ -157,6 +105,7 @@ def cal_jieqi(dt):  # 返回农历节气
 
         dd = day + 0.5000115740  # 本日12:00后才是儒略日的开始(过一秒钟)*/
         return int(365.25 * (year + 4716) + 0.01) + int(30.60001 * (month + 1)) + dd + B - 1524.5
+
     def cal_julian_day_of_ln_jie(year, st):  # 返回指定年份的节气的儒略日数
         s_stAccInfo = [
             0.00, 1272494.40, 2548020.60, 3830143.80, 5120226.60, 6420865.80,
@@ -176,8 +125,9 @@ def cal_jieqi(dt):  # 返回农历节气
     for i in range(24):
         delta = cal_rulian_day(dt) - cal_julian_day_of_ln_jie(dt.year, i)
         if -.5 <= delta <= .5:     # 因为两个都是浮点数，不能用相等表示
-            return JieQi[i * 2:(i + 1) * 2]
+            return JIEQI[i * 2:(i + 1) * 2]
     return ""
+
 
 def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支纪月
     """
@@ -194,36 +144,37 @@ def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支�
         year = nl_year - 3  # 虽然农历已经是腊月，但是已经立春， 所以年加一
         G = year % 10  # 模10，得到天干数
         Z = year % 12  # 模12，得到地支数
-        nl_year = TianGan[G] + DiZhi[Z]
+        nl_year = TIANGAN[G] + DIZHI[Z]
         nl_month = 0
         return nl_year, nl_month
 
-    if len(jie_qi) > 0 and jie_qi in JieQi_Odd:   # 如果恰好是节气当日
-        if JieQi_Month[jie_qi][0] == 0 and nl_month == 12:
+    if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:   # 如果恰好是节气当日
+        if JIEQI_MONTH[jie_qi][0] == 0 and nl_month == 12:
             nl_year, nl_month = _at_jieqi_day(nl_year)
         else:
             nl_year = gz_year  # 干支纪年
-            nl_month = JieQi_Month[jie_qi][0]  # 计算出干支纪月
+            nl_month = JIEQI_MONTH[jie_qi][0]  # 计算出干支纪月
     else:      # 如果不是节气日，则循环判断后一个分月节气是什么
         nl_year = gz_year
         nl_month = 0
         for i in range(-1, -40, -1):
             var_days = dt + datetime.timedelta(days=i)
             jie_qi = cal_jieqi(var_days)
-            if len(jie_qi) > 0 and jie_qi in JieQi_Odd:
-                if JieQi_Month[jie_qi][0] > 0:
-                    nl_month = JieQi_Month[jie_qi][0]
-                elif JieQi_Month[jie_qi][0] == 0 and nl_month == 12:
+            if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:
+                if JIEQI_MONTH[jie_qi][0] > 0:
+                    nl_month = JIEQI_MONTH[jie_qi][0]
+                elif JIEQI_MONTH[jie_qi][0] == 0 and nl_month == 12:
                     nl_year, nl_month = _at_jieqi_day(nl_year)
                 else:
                     nl_month = 0
                 break
-    gan_str = TianGan
+    gan_str = TIANGAN
     month_num = (gan_str.find(nl_year[0])+1) * 2 + nl_month + 1
     M = month_num % 10
     if M == 0:
         M = 10
-    return TianGan[M-1] + JieQi_Month[jie_qi][1]
+    return TIANGAN[M-1] + JIEQI_MONTH[jie_qi][1]
+
 
 def cal_gz_day(year, month, day):  # 返回干支纪日
     C = year // 100  # 取世纪数，减一
@@ -242,8 +193,8 @@ def cal_gz_day(year, month, day):  # 返回干支纪日
     # 计算支（说明：补减1）
     Z = 8 * C + C // 4 + 5 * y + y // 4 + 3 * (M + 1) // 5 + d + 7 + i - 1
     Z = Z % 12
+    return TIANGAN[G] + DIZHI[Z]
 
-    return TianGan[G] + DiZhi[Z]
 
 def cal_gz_hour(hour, gz_day):  # 返回干支纪时（时辰）
     """
@@ -251,7 +202,7 @@ def cal_gz_hour(hour, gz_day):  # 返回干支纪时（时辰）
     """
     # 计算支
     Z = round((hour / 2) + 0.1) % 12  # 之所以加0.1是因为round的bug!!
-    gz_day_num = TianGan.find(gz_day[0]) + 1
+    gz_day_num = TIANGAN.find(gz_day[0]) + 1
     gz_day_yu = gz_day_num % 5
     hour_num = Z + 1
     if gz_day_yu == 0:
@@ -259,72 +210,107 @@ def cal_gz_hour(hour, gz_day):  # 返回干支纪时（时辰）
     gz_hour_num = (gz_day_yu * 2 - 1 + hour_num-1) % 10
     if gz_hour_num == 0:
         gz_hour_num = 10
-    return TianGan[gz_hour_num-1] + DiZhi[Z]
+    return TIANGAN[gz_hour_num-1] + DIZHI[Z]
 
-Gan_2_Wuxing = {
-    '甲': ['木', '阳'],
-    '乙': ['木', '阴'],
-    '丙': ['火', '阳'],
-    '丁': ['火', '阴'],
-    '戊': ['土', '阳'],
-    '己': ['土', '阴'],
-    '庚': ['金', '阳'],
-    '辛': ['金', '阴'],
-    '壬': ['水', '阳'],
-    '癸': ['水', '阴']}
-Zhi_2_Wuxing = {
-    '子': ['水', '阳'],
-    '丑': ['土', '阴'],
-    '寅': ['木', '阳'],
-    '卯': ['木', '阴'],
-    '辰': ['土', '阳'],
-    '巳': ['火', '阴'],
-    '午': ['火', '阳'],
-    '未': ['土', '阴'],
-    '申': ['金', '阳'],
-    '酉': ['金', '阴'],
-    '戌': ['土', '阳'],
-    '亥': ['水', '阴'],
-}
 
 def get_shishen(wuxing, rizhu):
     attr, yy = wuxing
     _, rz_attr, rz_yy = rizhu
 
-    link = wx.WuXingLink()
+    link = WuXingLink()
     if attr == link.who_improve_me(rz_attr):
-        return '正印' if yy != rz_yy else '偏印'
+        res = '正印' if yy != rz_yy else '偏印'
     elif attr == link.who_impair_me(rz_attr):
-        return '正官' if yy != rz_yy else '七杀'
+        res = '正官' if yy != rz_yy else '七杀'
     elif attr == link.me_improve_who(rz_attr):
-        return '伤官' if yy != rz_yy else '食神'
+        res = '伤官' if yy != rz_yy else '食神'
     elif attr == link.me_impair_who(rz_attr):
-        return '正财' if yy != rz_yy else '偏财'
+        res = '正财' if yy != rz_yy else '偏财'
     else:
-        return '劫财' if yy != rz_yy else '比肩'
+        res = '劫财' if yy != rz_yy else '比肩'
+    del link
+    return res
+
 
 def cal_wuxing(bazi):
     wuxing = []
     for gz in bazi:
         gan, zhi = gz[0], gz[1]
-        wuxing.extend(Gan_2_Wuxing[gan][0])
-        wuxing.extend(Zhi_2_Wuxing[zhi][0])
+        wuxing.extend(GAN_2_WX_YY[gan][0])
+        wuxing.extend(ZHI_2_WX_YY[zhi][0])
     return wuxing
+
 
 def cal_shishen(rizhu, bazi):
     shishen_table = []
     for gz in bazi:
         gan, zhi = gz[0], gz[1]
 
-        gan_wuxing = Gan_2_Wuxing[gan]
+        gan_wuxing = GAN_2_WX_YY[gan]
         shishen = get_shishen(gan_wuxing, rizhu)
         shishen_table.append([gan, gan_wuxing[0], gan_wuxing[1], shishen])
 
-        zhi_wuxing = Zhi_2_Wuxing[zhi]
+        zhi_wuxing = ZHI_2_WX_YY[zhi]
         shishen = get_shishen(zhi_wuxing, rizhu)
         shishen_table.append([zhi, zhi_wuxing[0], zhi_wuxing[1], shishen])
     del(shishen_table[4])     # remove rigan
     return shishen_table
 
 
+def cal_wx_intensity(bazi):
+    # ref: https://www.buyiju.com/bzzs/qufa.html
 
+    def get_gan_month_intensity(month_zhi, gan):
+        df = pd.DataFrame(GAN_MONTH_INTENSITY_TABLE)
+        df.index = df['月支']
+        return df.at[month_zhi, gan]
+
+    def get_zhi_month_intensity(month_zhi, zhi):
+        df = pd.DataFrame(ZHI_MONTH_INTENSITY_TABLE[zhi])
+        df.set_index = ([pd.Index(ZHI_MONTH_INTENSITY_TABLE['月支']), '月支'])
+
+        canggan = df.loc[:, 0]
+        if canggan.shape[0] == 13:        # 单藏干
+            return {canggan[0]: canggan[LUNAR_MONTH_ZHI_2_NUM[month_zhi]]}
+        else:
+            return dict(zip(canggan, df.loc[:, LUNAR_MONTH_ZHI_2_NUM[month_zhi]]))
+
+    month_zhi = bazi[3]
+    day_gan = bazi[4]
+
+    attr_map = {'水': 0, '火': 1, '木': 2, '土': 3, '金': 4}
+    attr_values = [0. for i in range(5)]
+    for i in range(0, 8, 2):
+        gan = bazi[i]
+        gan_attr = GAN_2_WX_YY[gan][0]
+        gan_it = get_gan_month_intensity(month_zhi, gan)
+        attr_values[attr_map[gan_attr]] += gan_it
+    for i in range(1, 8, 2):
+        zhi = bazi[i]
+        zhi_it = get_zhi_month_intensity(month_zhi, zhi)
+        for k, v in zhi_it.items():
+            k_attr = GAN_2_WX_YY[k][0]
+            attr_values[attr_map[k_attr]] += v
+    v_wx_it = {}
+    for attr, idx in attr_map.items():
+        v_wx_it[attr] = attr_values[idx]
+
+    # cal category intensity
+    day_gan_attr = GAN_2_WX_YY[day_gan][0]
+    link = WuXingLink()
+    same_category = [day_gan_attr, link.who_improve_me(day_gan_attr)]
+    diff_category = [link.who_impair_me(day_gan_attr), link.me_impair_who(day_gan_attr), link.me_improve_who(day_gan_attr)]
+    del link
+    v_same_category = v_diff_category = 0
+    for k, v in v_wx_it.items():
+        if k in same_category:
+            v_same_category += v
+        else:
+            v_diff_category += v
+    v_wx_it['同类'] = [same_category, v_same_category]
+    v_wx_it['异类'] = [diff_category, v_diff_category]
+    return v_wx_it
+
+
+if __name__ == '__main__':
+    print(0)
