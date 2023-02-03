@@ -66,6 +66,15 @@ def cal_jieqi(dt):  # 返回农历节气
     return ""
 
 
+def at_jieqi_day(nl_year):
+    year = nl_year - 3  # 虽然农历已经是腊月，但是已经立春， 所以年加一
+    G = year % 10  # 模10，得到天干数
+    Z = year % 12  # 模12，得到地支数
+    nl_year = TIANGAN[G] + DIZHI[Z]
+    nl_month = 0
+    return nl_year, nl_month
+
+
 def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支纪月
     """
     干支纪月的计算规则较为复杂，是本人在前人的基础上实现的，填补了空白。
@@ -77,17 +86,9 @@ def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支�
     dt = datetime.datetime(year, month, day)
     jie_qi = cal_jieqi(dt)
 
-    def _at_jieqi_day(nl_year):
-        year = nl_year - 3  # 虽然农历已经是腊月，但是已经立春， 所以年加一
-        G = year % 10  # 模10，得到天干数
-        Z = year % 12  # 模12，得到地支数
-        nl_year = TIANGAN[G] + DIZHI[Z]
-        nl_month = 0
-        return nl_year, nl_month
-
     if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:   # 如果恰好是节气当日
         if JIEQI_MONTH[jie_qi][0] == 0 and nl_month == 12:
-            nl_year, nl_month = _at_jieqi_day(nl_year)
+            nl_year, nl_month = at_jieqi_day(nl_year)
         else:
             nl_year = gz_year  # 干支纪年
             nl_month = JIEQI_MONTH[jie_qi][0]  # 计算出干支纪月
@@ -101,7 +102,7 @@ def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支�
                 if JIEQI_MONTH[jie_qi][0] > 0:
                     nl_month = JIEQI_MONTH[jie_qi][0]
                 elif JIEQI_MONTH[jie_qi][0] == 0 and nl_month == 12:
-                    nl_year, nl_month = _at_jieqi_day(nl_year)
+                    nl_year, nl_month = at_jieqi_day(nl_year)
                 else:
                     nl_month = 0
                 break
@@ -247,9 +248,46 @@ def relation_matrix():
         m = A[i, :] * wx[i]
         M = np.vstack((M, m))
 
-    M = np.array([wx] * 5) + M
+    M = np.array([wx] * 5) + M        # TODO:how to model
     return M
 
+
+def find_next_jieqi(year, month, day, order=1):
+    dt = datetime.datetime(year, month, day)
+    jie_qi = cal_jieqi(dt)
+    if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:   # 如果恰好是节气当日
+        return 0
+    else:      # 如果不是节，则寻找临近节
+        if order > 0:
+            for i in range(1, 40, 1):
+                var_days = dt + datetime.timedelta(days=i)
+                jie_qi = cal_jieqi(var_days)
+                if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:
+                    return i
+        else:
+            for i in range(-1, -40, -1):
+                var_days = dt + datetime.timedelta(days=i)
+                jie_qi = cal_jieqi(var_days)
+                if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:
+                    return abs(i)
+
+
+def get_dayun_ages(year, month, day, bazi, gender):
+    # https://www.zhihu.com/search?type=content&q=%E5%A6%82%E4%BD%95%E6%8E%92%E5%A4%A7%E8%BF%90
+    dayun_ages = {}
+    start_id = SIXTY_JIAZI.index(bazi[1])
+    if (bazi[0][1] == '阳' and gender == 'male') or (bazi[0][1] == '阴' and gender == 'female'):    # 阳年生男，阴年生女
+        delta_days = find_next_jieqi(year, month, day, 1)
+        start_age = delta_days // 3
+        for i in range(8):
+            dayun_ages[start_age + i * 10] = SIXTY_JIAZI[start_id + i + 1]
+    else:   # 阳年生女，阴年生男
+        delta_days = find_next_jieqi(year, month, day, -1)
+        start_age = delta_days // 3
+        for i in range(8):
+            dayun_ages[start_age + i * 10] = SIXTY_JIAZI[start_id - i - 1]
+
+    return dayun_ages
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@ class Lunar(object):
         self.wuxing_it = {'火': 0, '土': 0, '水': 0, '金': 0, "木": 0}
         self.shishen = []
         self.yongshen = ''
-        self.dayun = []
+        self.dayun = {}
         self.shengxiao = ""
 
     def init(self):
@@ -36,6 +36,7 @@ class Lunar(object):
         self.set_wuxing()
         self.set_shishen()
         self.set_yongshen()
+        self.set_dayun()
 
     def set_shengxiao(self):
         year = self.nl_year - 3 - 1     # 农历年份减3 （说明：补减1）
@@ -112,8 +113,7 @@ class Lunar(object):
             self.yongshen = diff_cate
 
     def set_dayun(self):
-
-        return 0
+        self.dayun = utils.get_dayun_ages(self.year, self.month, self.day, self.bazi, self.gender)
 
 
 if __name__ == "__main__":
