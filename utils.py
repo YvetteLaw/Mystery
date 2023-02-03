@@ -3,6 +3,7 @@ ref: http://www.cdyszyxy.cn/jingdian/358335.html
 """
 
 import datetime
+import numpy as np
 import pandas as pd
 import zhdate
 from wuxing import *
@@ -168,25 +169,24 @@ def get_shishen(wuxing, rizhu):
     return res
 
 
-def cal_wx_intensity(bazi):
+def cal_wx_intensity(bazi, base):
     # ref: https://www.buyiju.com/bzzs/qufa.html
 
-    def get_gan_month_intensity(month_zhi, gan):
+    def get_gan_month_intensity(gan):
         df = pd.DataFrame(GAN_MONTH_INTENSITY_TABLE)
         df.index = df['月支']
-        return df.at[month_zhi, gan]
+        return df.at[base, gan]
 
-    def get_zhi_month_intensity(month_zhi, zhi):
+    def get_zhi_month_intensity(zhi):
         df = pd.DataFrame(ZHI_MONTH_INTENSITY_TABLE[zhi])
         df.set_index = ([pd.Index(ZHI_MONTH_INTENSITY_TABLE['月支']), '月支'])
 
         canggan = df.loc[:, 0]
         if canggan.shape[0] == 13:        # 单藏干
-            return {canggan[0]: canggan[LUNAR_MONTH_ZHI_2_NUM[month_zhi]]}
+            return {canggan[0]: canggan[LUNAR_MONTH_ZHI_2_NUM[base]]}
         else:
-            return dict(zip(canggan, df.loc[:, LUNAR_MONTH_ZHI_2_NUM[month_zhi]]))
+            return dict(zip(canggan, df.loc[:, LUNAR_MONTH_ZHI_2_NUM[base]]))
 
-    month_zhi = bazi[3]
     day_gan = bazi[4]
 
     attr_map = {'水': 0, '火': 1, '木': 2, '土': 3, '金': 4}
@@ -194,11 +194,11 @@ def cal_wx_intensity(bazi):
     for i in range(0, 8, 2):
         gan = bazi[i]
         gan_attr = GAN_2_WX_YY[gan][0]
-        gan_it = get_gan_month_intensity(month_zhi, gan)
+        gan_it = get_gan_month_intensity(gan)
         attr_values[attr_map[gan_attr]] += gan_it
     for i in range(1, 8, 2):
         zhi = bazi[i]
-        zhi_it = get_zhi_month_intensity(month_zhi, zhi)
+        zhi_it = get_zhi_month_intensity(zhi)
         for k, v in zhi_it.items():
             k_attr = GAN_2_WX_YY[k][0]
             attr_values[attr_map[k_attr]] += v
@@ -224,10 +224,35 @@ def cal_wx_intensity(bazi):
     return v_wx_it
 
 
+def relation_matrix():
+    '''
+        金  木  水   火  土  (base)
+    金      -   +   +   -
+    木  +       -   +   -
+    水  -   +       -   +
+    火  -   -   +       +
+    土  +   +   -   -
+    '''
+    WX_RELATION_MATRIX = [[0, -1, 1, 1, -1],
+                          [1, 0, -1, 1, -1],
+                          [-1, 1, 0, -1, 1],
+                          [-1, -1, 1, 0, 1],
+                          [1, 1, -1, -1, 0]]
+
+    wx = [1, 2, 0, 3, 2]  # [金，木，水，火，土]
+
+    A = np.array(WX_RELATION_MATRIX)
+    M = np.empty(shape=[0, 5])
+    for i in range(5):
+        m = A[i, :] * wx[i]
+        M = np.vstack((M, m))
+
+    M = np.array([wx] * 5) + M
+    return M
+
+
+
 if __name__ == '__main__':
     print(transfer_lunar_to_dt(1994, 5, 4))
     print(transfer_dt_to_lunar(1994, 6, 12))
     print(0)
-
-
-

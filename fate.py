@@ -20,14 +20,12 @@ class Lunar(object):
         self.gz_year = self.gz_month = self.gz_day = self.gz_hour = ""
         self.bazi = []
         self.rigan = []
-        self.yongshen = []
         self.wuxing = []
         self.wuxing_it = {'火': 0, '土': 0, '水': 0, '金': 0, "木": 0}
         self.shishen = []
-
+        self.yongshen = ''
+        self.dayun = []
         self.shengxiao = ""
-
-        self.age_qiyun = 1
 
     def init(self):
         print('公历生日：' + str(self.year) + '年' + str(self.month) + '月' + str(self.day) + '日' + "\n" +
@@ -57,12 +55,24 @@ class Lunar(object):
         self.rigan = [rizhu, wuxing[0], wuxing[1]]
         print('八字：' + ' '.join(self.bazi) + ', 日干为：' + self.rigan[0] + self.rigan[1])
 
-    def set_wuxing(self):     # TODO: count, what lack
+    def set_wuxing(self):
         for gz in self.bazi:
             gan, zhi = gz[0], gz[1]
             self.wuxing.extend(utils.GAN_2_WX_YY[gan][0])
             self.wuxing.extend(utils.ZHI_2_WX_YY[zhi][0])
-        print('五行：' + ','.join(self.wuxing))
+
+        # count
+        attrs = set(self.wuxing)
+        wx_str = ''
+        for attr in attrs:
+            wx_str += str(self.wuxing.count(attr)) + attr + ','
+        if len(attrs) != 5:
+            wx_str += '五行缺'
+            for attr in utils.WUXING:
+                if attr not in attrs:
+                    wx_str += attr
+
+        print('五行：' + wx_str)
 
     def set_shishen(self):     # TODO：count and analyze
         for gz in self.bazi:
@@ -78,7 +88,7 @@ class Lunar(object):
 
     def set_yongshen(self):
         bazi = ''.join(self.bazi)
-        v_wx_it = utils.cal_wx_intensity(bazi)
+        v_wx_it = utils.cal_wx_intensity(bazi, base=bazi[3])    # 以月支来计算五行强度
         self.wuxing_it['火'] = v_wx_it['火']
         self.wuxing_it['土'] = v_wx_it['土']
         self.wuxing_it['金'] = v_wx_it['金']
@@ -87,12 +97,23 @@ class Lunar(object):
         same_cate, same_v = v_wx_it['同类']
         diff_cate, diff_v = v_wx_it['异类']
 
-        if same_v <= diff_v:    # TODO：modify yongshen
-            self.yongshen = same_cate
-            print('日干偏弱，需要补强。用神为：' + ','.join(self.yongshen))
+        '''
+        "命以用神为紧要，看命神之法，不过扶抑而已。
+        凡弱者宜扶，扶之者即用神也，扶之太过，抑其扶者为用神，扶之不及，扶其扶者为用神；
+        凡强者宜抑，抑之者为用神也，抑之太过，抑其抑者为用神，抑之不及，扶其抑者为用神。
+        --陈素庵《命理约言》卷一《看用神法》
+        '''
+        # TODO： how to calculate yongshen
+        if same_v <= diff_v:
+            print('日主自身偏弱，需要补强。')
+            self.yongshen = same_cate[1]
         else:
+            print('日主自身偏强，需要抑制。')
             self.yongshen = diff_cate
-            print('日干偏强，需要抑制。用神为：' + ','.join(self.yongshen))
+
+    def set_dayun(self):
+
+        return 0
 
 
 if __name__ == "__main__":
