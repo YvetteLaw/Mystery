@@ -37,6 +37,7 @@ class Lunar(object):
         self.set_shishen()
         self.set_yongshen()
         self.set_dayun()
+        self.set_special_fate()
 
     def set_shengxiao(self):
         year = self.nl_year - 3 - 1     # 农历年份减3 （说明：补减1）
@@ -114,6 +115,11 @@ class Lunar(object):
 
     def set_dayun(self):
         self.dayun = utils.get_dayun_ages(self.year, self.month, self.day, self.bazi, self.gender)
+
+    def set_special_fate(self):
+        print("星宿神煞如下：")
+        utils.check_special_fate(self.bazi)
+
 
 
 if __name__ == "__main__":

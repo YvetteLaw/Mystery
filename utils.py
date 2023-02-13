@@ -287,7 +287,94 @@ def get_dayun_ages(year, month, day, bazi, gender):
         for i in range(8):
             dayun_ages[start_age + i * 10] = SIXTY_JIAZI[start_id - i - 1]
 
+    # TODO: analyze special years, I means split gan and zhi of each dayun
     return dayun_ages
+
+
+def check_special_fate(bazi):
+    ### 以下星煞吉
+    # 天德贵人
+    for i in SHENSHA_TIANDE_TABLE[bazi[1][1]]:
+        if i in [bazi[2][0], bazi[2][1], bazi[3][0], bazi[3][1]]:
+            print("命中有天德贵人星，吉星照命，一生吉利，荣华富贵。")
+            break
+
+    # 月德贵人
+    for k, v in SHENSHA_YUEDE_TABLE.items():
+        if bazi[1][1] in k and bazi[2][0] == v:
+            print("命中有月德贵人星，一生无险无虑。")
+            break
+
+    # 三奇
+    three_tiangan = (bazi[0][0], bazi[1][0], bazi[2][0])
+    if three_tiangan == SHENSHA_SANQI_TABLE[0]:
+        print("神煞中有\"天上三奇\", 襟怀卓越，博学多能，大富大贵，不属凡类。")
+    elif three_tiangan == SHENSHA_SANQI_TABLE[1]:
+        print("神煞中有\"地上三奇\", 襟怀卓越，博学多能，大富大贵，不属凡类。")
+    elif three_tiangan == SHENSHA_SANQI_TABLE[2]:
+        print("神煞中有\"人中三奇\", 襟怀卓越，博学多能，大富大贵，不属凡类。")
+
+    # 天乙贵人
+    three_dizhi = [bazi[0][1], bazi[1][1], bazi[3][1]]
+    for k, v in SHENSHA_TIANYIGUIREN_TABLE.items():
+        if bazi[2][0] in k:
+            if v[0] in three_dizhi or v[1] in three_dizhi:
+                print("命中有天乙贵人星，得之聪明。可逢凶化吉，有贵人相助。")
+            break
+
+    # 天赦星
+    for k, v in SHENSHA_TIANYIGUIREN_TABLE.items():
+        if bazi[1][1] in k and bazi[2] == v:
+            print("命中有天赦星，一生处世无忧。")
+            break
+
+    # 十干禄
+    lu = SHENSHA_SHIGANLU_TABLE[bazi[2][0]]       # TODO： check 六甲空亡
+    if bazi[0][1] == lu:
+        print("命中逢岁禄，一生衣禄不愁。")
+    if bazi[1][1] == lu:
+        print("命中逢建禄，一生衣禄不愁。")
+    if bazi[2][1] == lu:
+        print("命中逢坐禄，一生衣禄不愁。")
+    if bazi[3][1] == lu:
+        print("命中逢归禄，一生衣禄不愁。")
+
+    # 文昌
+    if SHENSHA_WENCHANG_TABLE[bazi[2][0]] in three_dizhi:
+        print("命中有文昌星，聪明过人，才华出众，可逢凶化吉。")
+
+    # 将星
+    for k, v in SHENSHA_JIANGXING_TABLE.items():
+        if bazi[2][1] in k and v in three_dizhi:
+            print("命中有将星，有掌权之能，众人皆服。")
+            break
+
+    ### 以下星煞偏中性
+    # 魁罡
+    if bazi[2] == "戊戌" or bazi[2] == "庚戌":          # TODO： how to analyze?
+        print("命中有天罡")
+    if bazi[2] == "庚辰" or bazi[2] == "壬辰":
+        print("命中有地罡")
+
+    # 华盖
+    for k, v in SHENSHA_HUAGAI_TABLE.items():         # TODO： how to analyze?
+        if bazi[2][1] in k and v in three_dizhi:
+            print("命中有华盖星。读书刻苦，做事勤恳，但性格不免孤僻。")
+            break
+
+    # 驿马
+    for k, v in SHENSHA_YIMA_TABLE.items():         # TODO： how to analyze?
+        if bazi[2][1] in k and v in three_dizhi:
+            print("命中有驿马星。贵人驿马多升跃，常人驿马多奔波")
+            break
+
+    ### 以下星煞凶
+    # 羊刃
+    # 桃花煞
+    # 孤辰、孤宿
+    # 亡神
+    # 六甲空亡
+    # 十恶大败
 
 
 if __name__ == '__main__':
