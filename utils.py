@@ -291,7 +291,7 @@ def get_dayun_ages(year, month, day, bazi, gender):
     return dayun_ages
 
 
-def check_special_fate(bazi):
+def check_xingxiushensha(bazi):
     ### 以下星煞吉
     # 天德贵人
     for i in SHENSHA_TIANDE_TABLE[bazi[1][1]]:
@@ -370,11 +370,50 @@ def check_special_fate(bazi):
 
     ### 以下星煞凶
     # 羊刃
-    # 桃花煞
+    yanren = SHENSHA_YANGREN_TABLE[bazi[2][0]]      # TODO： how to analyze?
+    if bazi[0][1] == yanren:
+        print("年支见羊刃")
+    if bazi[1][1] == yanren:
+        print("月支见羊刃")
+    if bazi[2][1] == yanren:
+        print("日支见羊刃")
+    if bazi[3][1] == yanren:
+        print("时支见羊刃")
+
+    # 桃花煞（咸池）
+    for k, v in SHENSHA_TAOHUA_TABLE.items():         # TODO： how to analyze?
+        if bazi[2][1] in k:
+            if v == bazi[0][1] or v == bazi[1][1]:
+                print("命中有桃花煞，为墙里桃花。")
+            if v == bazi[3][1]:
+                print("命中有桃花煞，为墙外桃花。")
+            break
+
     # 孤辰、孤宿
+    for k, v in SHENSHA_GUCHENGUXIU_TABLE.items():
+        if bazi[0][1] in k:
+            if v[0] in [bazi[1][1], bazi[2][1], bazi[3][1]]:    # TODO： how to analyze?
+                print("命中有孤辰，")
+            if v[1] in [bazi[1][1], bazi[2][1], bazi[3][1]]:    # TODO： how to analyze?
+                print("命中有孤宿，")
+            break
+
     # 亡神
+    for k, v in SHENSHA_WANGSHEN_TABLE.items():         # TODO： how to analyze?
+        if bazi[2][1] in k and v in three_dizhi:
+            print("命中有亡神星。")
+            break
+
     # 六甲空亡
+    for k, v in SHENSHA_LIUJIAKONGWANG_TABLE.items():         # TODO： how to analyze?
+        if bazi[2] in k and (v[0] in three_dizhi or v[1] in three_dizhi):
+            print("命中有空亡。")
+            break
+
     # 十恶大败
+    if SHENSHA_SHIEDABAI_TABLE[bazi[0]] == bazi[2]:
+        print("命中有十恶大败。")
+
 
 
 if __name__ == '__main__':
