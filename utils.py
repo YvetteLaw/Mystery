@@ -61,7 +61,7 @@ def cal_jieqi(dt):  # 返回农历节气
 
     for i in range(24):
         delta = cal_rulian_day(dt) - cal_julian_day_of_ln_jie(dt.year, i)
-        if -.5 <= delta <= .5:     # 因为两个都是浮点数，不能用相等表示
+        if -.5 <= delta <= .5:  # 因为两个都是浮点数，不能用相等表示
             return JIEQI[i * 2:(i + 1) * 2]
     return ""
 
@@ -86,13 +86,13 @@ def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支�
     dt = datetime.datetime(year, month, day)
     jie_qi = cal_jieqi(dt)
 
-    if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:   # 如果恰好是节气当日
+    if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:  # 如果恰好是节气当日
         if JIEQI_MONTH[jie_qi][0] == 0 and nl_month == 12:
             nl_year, nl_month = at_jieqi_day(nl_year)
         else:
             nl_year = gz_year  # 干支纪年
             nl_month = JIEQI_MONTH[jie_qi][0]  # 计算出干支纪月
-    else:      # 如果不是节气日，则循环判断后一个分月节气是什么
+    else:  # 如果不是节气日，则循环判断后一个分月节气是什么
         nl_year = gz_year
         nl_month = 0
         for i in range(-1, -40, -1):
@@ -107,11 +107,11 @@ def cal_gz_month(year, month, day, nl_year, nl_month, gz_year):  # 返回干支�
                     nl_month = 0
                 break
     gan_str = TIANGAN
-    month_num = (gan_str.find(nl_year[0])+1) * 2 + nl_month + 1
+    month_num = (gan_str.find(nl_year[0]) + 1) * 2 + nl_month + 1
     M = month_num % 10
     if M == 0:
         M = 10
-    return TIANGAN[M-1] + JIEQI_MONTH[jie_qi][1]
+    return TIANGAN[M - 1] + JIEQI_MONTH[jie_qi][1]
 
 
 def cal_gz_day(year, month, day):  # 返回干支纪日
@@ -145,10 +145,10 @@ def cal_gz_hour(hour, gz_day):  # 返回干支纪时（时辰）
     hour_num = Z + 1
     if gz_day_yu == 0:
         gz_day_yu = 5
-    gz_hour_num = (gz_day_yu * 2 - 1 + hour_num-1) % 10
+    gz_hour_num = (gz_day_yu * 2 - 1 + hour_num - 1) % 10
     if gz_hour_num == 0:
         gz_hour_num = 10
-    return TIANGAN[gz_hour_num-1] + DIZHI[Z]
+    return TIANGAN[gz_hour_num - 1] + DIZHI[Z]
 
 
 def get_shishen(wuxing, rizhu):
@@ -183,7 +183,7 @@ def cal_wx_intensity(bazi, base):
         df.set_index = ([pd.Index(ZHI_MONTH_INTENSITY_TABLE['月支']), '月支'])
 
         canggan = df.loc[:, 0]
-        if canggan.shape[0] == 13:        # 单藏干
+        if canggan.shape[0] == 13:  # 单藏干
             return {canggan[0]: canggan[LUNAR_MONTH_ZHI_2_NUM[base]]}
         else:
             return dict(zip(canggan, df.loc[:, LUNAR_MONTH_ZHI_2_NUM[base]]))
@@ -248,16 +248,16 @@ def relation_matrix():
         m = A[i, :] * wx[i]
         M = np.vstack((M, m))
 
-    M = np.array([wx] * 5) + M        # TODO:how to model
+    M = np.array([wx] * 5) + M  # TODO:how to model
     return M
 
 
 def find_next_jieqi(year, month, day, order=1):
     dt = datetime.datetime(year, month, day)
     jie_qi = cal_jieqi(dt)
-    if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:   # 如果恰好是节气当日
+    if len(jie_qi) > 0 and jie_qi in JIEQI_JIE:  # 如果恰好是节气当日
         return 0
-    else:      # 如果不是节，则寻找临近节
+    else:  # 如果不是节，则寻找临近节
         if order > 0:
             for i in range(1, 40, 1):
                 var_days = dt + datetime.timedelta(days=i)
@@ -276,12 +276,12 @@ def get_dayun_ages(year, month, day, bazi, gender):
     # https://www.zhihu.com/search?type=content&q=%E5%A6%82%E4%BD%95%E6%8E%92%E5%A4%A7%E8%BF%90
     dayun_ages = {}
     start_id = SIXTY_JIAZI.index(bazi[1])
-    if (bazi[0][1] == '阳' and gender == 'male') or (bazi[0][1] == '阴' and gender == 'female'):    # 阳年生男，阴年生女
+    if (bazi[0][1] == '阳' and gender == 'male') or (bazi[0][1] == '阴' and gender == 'female'):  # 阳年生男，阴年生女
         delta_days = find_next_jieqi(year, month, day, 1)
         start_age = delta_days // 3
         for i in range(8):
             dayun_ages[start_age + i * 10] = SIXTY_JIAZI[start_id + i + 1]
-    else:   # 阳年生女，阴年生男
+    else:  # 阳年生女，阴年生男
         delta_days = find_next_jieqi(year, month, day, -1)
         start_age = delta_days // 3
         for i in range(8):
@@ -329,7 +329,7 @@ def check_xingxiushensha(bazi):
             break
 
     # 十干禄
-    lu = SHENSHA_SHIGANLU_TABLE[bazi[2][0]]       # TODO： check 六甲空亡
+    lu = SHENSHA_SHIGANLU_TABLE[bazi[2][0]]  # TODO： check 六甲空亡
     if bazi[0][1] == lu:
         print("命中逢岁禄，一生衣禄不愁。")
     if bazi[1][1] == lu:
@@ -351,26 +351,26 @@ def check_xingxiushensha(bazi):
 
     ### 以下星煞偏中性
     # 魁罡
-    if bazi[2] == "戊戌" or bazi[2] == "庚戌":          # TODO： how to analyze?
+    if bazi[2] == "戊戌" or bazi[2] == "庚戌":  # TODO： how to analyze?
         print("命中有天罡")
     if bazi[2] == "庚辰" or bazi[2] == "壬辰":
         print("命中有地罡")
 
     # 华盖
-    for k, v in SHENSHA_HUAGAI_TABLE.items():         # TODO： how to analyze?
+    for k, v in SHENSHA_HUAGAI_TABLE.items():  # TODO： how to analyze?
         if bazi[2][1] in k and v in three_dizhi:
             print("命中有华盖星。读书刻苦，做事勤恳，但性格不免孤僻。")
             break
 
     # 驿马
-    for k, v in SHENSHA_YIMA_TABLE.items():         # TODO： how to analyze?
+    for k, v in SHENSHA_YIMA_TABLE.items():  # TODO： how to analyze?
         if bazi[2][1] in k and v in three_dizhi:
             print("命中有驿马星。贵人驿马多升跃，常人驿马多奔波")
             break
 
     ### 以下星煞凶
     # 羊刃
-    yanren = SHENSHA_YANGREN_TABLE[bazi[2][0]]      # TODO： how to analyze?
+    yanren = SHENSHA_YANGREN_TABLE[bazi[2][0]]  # TODO： how to analyze?
     if bazi[0][1] == yanren:
         print("年支见羊刃")
     if bazi[1][1] == yanren:
@@ -381,7 +381,7 @@ def check_xingxiushensha(bazi):
         print("时支见羊刃")
 
     # 桃花煞（咸池）
-    for k, v in SHENSHA_TAOHUA_TABLE.items():         # TODO： how to analyze?
+    for k, v in SHENSHA_TAOHUA_TABLE.items():  # TODO： how to analyze?
         if bazi[2][1] in k:
             if v == bazi[0][1] or v == bazi[1][1]:
                 print("命中有桃花煞，为墙里桃花。")
@@ -392,20 +392,20 @@ def check_xingxiushensha(bazi):
     # 孤辰、孤宿
     for k, v in SHENSHA_GUCHENGUXIU_TABLE.items():
         if bazi[0][1] in k:
-            if v[0] in [bazi[1][1], bazi[2][1], bazi[3][1]]:    # TODO： how to analyze?
+            if v[0] in [bazi[1][1], bazi[2][1], bazi[3][1]]:  # TODO： how to analyze?
                 print("命中有孤辰，")
-            if v[1] in [bazi[1][1], bazi[2][1], bazi[3][1]]:    # TODO： how to analyze?
+            if v[1] in [bazi[1][1], bazi[2][1], bazi[3][1]]:  # TODO： how to analyze?
                 print("命中有孤宿，")
             break
 
     # 亡神
-    for k, v in SHENSHA_WANGSHEN_TABLE.items():         # TODO： how to analyze?
+    for k, v in SHENSHA_WANGSHEN_TABLE.items():  # TODO： how to analyze?
         if bazi[2][1] in k and v in three_dizhi:
             print("命中有亡神星。")
             break
 
     # 六甲空亡
-    for k, v in SHENSHA_LIUJIAKONGWANG_TABLE.items():         # TODO： how to analyze?
+    for k, v in SHENSHA_LIUJIAKONGWANG_TABLE.items():  # TODO： how to analyze?
         if bazi[2] in k and (v[0] in three_dizhi or v[1] in three_dizhi):
             print("命中有空亡。")
             break
@@ -415,8 +415,38 @@ def check_xingxiushensha(bazi):
         print("命中有十恶大败。")
 
 
+def get_mingge(bazi, shishen, rigan):
+    canggan = YUEZHIGANCANGZHI[bazi[1][1]]
+
+    def check_exist(cg):
+        if cg in bazi[0][0]:
+            return shishen[0]
+        elif cg in bazi[1][0]:
+            return shishen[2]
+        elif cg in bazi[3][0]:
+            return shishen[5]
+        else:
+            return ''
+
+    for i in range(len(canggan)):
+        res = check_exist(canggan[i])
+        if canggan[i] not in [bazi[2][0], SHENSHA_SHIGANLU_TABLE[bazi[2][0]], SHENSHA_YANGREN_TABLE[bazi[2][0]]] and \
+                res != '':
+            return res
+        if len(canggan) == 1:
+            return shishen[3]
+
+    return get_shishen(GAN_2_WX_YY[canggan[0]], rigan)
+
 
 if __name__ == '__main__':
-    print(transfer_lunar_to_dt(1994, 5, 4))
-    print(transfer_dt_to_lunar(1994, 6, 12))
-    print(0)
+    bazi = ['佳音', '壬申', '壬申', '乙巳']
+    shishen = ['1', '2', '3', '4', '5', '6', '7']
+    rg = bazi[2][0]
+    wx = GAN_2_WX_YY[rg]
+    wx.insert(0, rg)
+    print(get_mingge(bazi, shishen, wx))
+
+    # print(transfer_lunar_to_dt(1994, 5, 4))
+    # print(transfer_dt_to_lunar(1994, 6, 12))
+    # print(0)

@@ -38,6 +38,7 @@ class Lunar(object):
         self.set_yongshen()
         self.set_dayun()
         self.set_xingxiushensha()
+        self.set_mingge()
 
     def set_shengxiao(self):
         year = self.nl_year - 3 - 1     # 农历年份减3 （说明：补减1）
@@ -120,10 +121,27 @@ class Lunar(object):
         print("星宿神煞如下：")
         utils.check_xingxiushensha(self.bazi)
 
+    def set_mingge(self):
+        mingge = utils.get_mingge(self.bazi, self.shishen, self.rigan)
+        print("命里格局为：" + mingge)
+
+    def set_xingchonghaihua(self):
+        gans = [self.bazi[i][0] for i in range(4)]
+        zhis = [self.bazi[i][1] for i in range(4)]
+        #TODO
 
 
-if __name__ == "__main__":
+def analyze():
     example = Lunar(1994, 6, 12, 4, if_dt=True, gender='female', if_leap_month=False)
     # if_leap_month表示农历闰月，仅在if_dt=False时要求usr输入
 
     example.init()
+
+    # example.set_yongshen()
+    # example.set_mingge()
+    # example.set_xingchonghaihua()
+
+
+
+if __name__ == "__main__":
+    analyze()
